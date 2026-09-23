@@ -630,6 +630,11 @@ async function submitClaim() {
   document.getElementById('submitBtn').textContent = '⏳ 제출 중...';
   showLoading('사진을 전송하고 있습니다.\n잠시만 기다려주세요.\n페이지를 닫지 마세요.');
 
+  // 브라우저가 로딩 화면을 먼저 그린 뒤
+  // 큰 사진 데이터(base64)를 처리하도록 한 프레임 양보합니다.
+  // 이게 없으면 사진 용량이 클 때 로딩 화면이 늦게 나타날 수 있습니다.
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
   const docData = {
     name,
     phone,
@@ -650,6 +655,8 @@ async function submitClaim() {
       originalName: photoData[s.id].name
     };
   });
+
+  showLoading('사진을 전송하고 있습니다.\n잠시만 기다려주세요.\n페이지를 닫지 마세요.');
 
   try {
     /*

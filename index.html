@@ -489,7 +489,7 @@ function buildPhotoGrid() {
   const grid = document.getElementById('photoGrid');
   grid.innerHTML = PHOTO_SLOTS.map(s => `
     <div class="photo-item" id="item_${s.id}" onclick="document.getElementById('file_${s.id}').click()">
-      <input type="file" id="file_${s.id}" accept="image/*" capture="environment"
+      <input type="file" id="file_${s.id}" accept="image/*"
              onchange="handlePhoto('${s.id}', this)">
       <div class="photo-placeholder" id="placeholder_${s.id}">
         <div class="icon">📷</div>
@@ -592,7 +592,23 @@ function updateSubmitBtn() {
     !(allPhotos && consent && name && phone && shop && date && car) || submitting;
 }
 
-['f_name','f_phone','f_shop','f_date','f_car'].forEach(id => {
+// 연락처: 010-1234-5678 형식으로 자동 입력
+const phoneInput = document.getElementById('f_phone');
+phoneInput.addEventListener('input', function () {
+  let digits = this.value.replace(/\D/g, '').slice(0, 11);
+
+  if (digits.length <= 3) {
+    this.value = digits;
+  } else if (digits.length <= 7) {
+    this.value = digits.slice(0, 3) + '-' + digits.slice(3);
+  } else {
+    this.value = digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  }
+
+  updateSubmitBtn();
+});
+
+['f_name','f_shop','f_date','f_car'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateSubmitBtn);
   document.getElementById(id).addEventListener('change', updateSubmitBtn);
 });

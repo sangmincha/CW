@@ -514,7 +514,7 @@ function buildPhotoGrid() {
   const grid = document.getElementById('photoGrid');
   grid.innerHTML = PHOTO_SLOTS.map(s => `
     <div class="photo-item" id="item_${s.id}" onclick="document.getElementById('file_${s.id}').click()">
-      <input type="file" id="file_${s.id}" accept="image/*" capture="environment"
+      <input type="file" id="file_${s.id}" accept="image/*"
              onchange="handlePhoto('${s.id}', this)">
       <div class="photo-placeholder" id="placeholder_${s.id}">
         <div class="icon">📷</div>

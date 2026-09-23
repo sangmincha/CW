@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>배터리 불량 점검 의뢰서</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1245b5;
+    --danger: #e02424;
+    --success: #057a55;
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --warn-bg: #fffbeb;
+    --warn-border: #f59e0b;
+    --warn-text: #92400e;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --card: #1f2937; --border: #374151;
+      --text: #f9fafb; --muted: #9ca3af;
+      --warn-bg: #1c1a00; --warn-text: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+  body { padding: 16px; }
+
+  .header {
+    background: var(--primary);
+    color: #fff;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { font-size: 1.2rem; font-weight: 700; }
+  .header p { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; }
+  .header-nav button {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .header-nav button:hover { background: rgba(255,255,255,0.35); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .badge { font-size: 0.72rem; background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+  .required::after { content: ' *'; color: var(--danger); }
+  input, select, textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* 사진 업로드 */
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .photo-item { border: 2px dashed var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+  .photo-item:hover { border-color: var(--primary); }
+  .photo-item.uploaded { border-style: solid; border-color: var(--success); }
+  .photo-item input[type=file] { display: none; }
+  .photo-placeholder {
+    padding: 16px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .photo-placeholder .icon { font-size: 1.8rem; }
+  .photo-placeholder .num { font-size: 0.72rem; font-weight: 700; color: var(--primary); }
+  .photo-placeholder .name { font-size: 0.75rem; color: var(--muted); line-height: 1.3; }
+  .photo-preview { width: 100%; height: 120px; object-fit: cover; display: block; }
+  .photo-label { font-size: 0.7rem; padding: 4px 8px; background: var(--bg); color: var(--muted); text-align: center; border-top: 1px solid var(--border); }
+
+  /* 동의서 */
+  .consent-box {
+    background: var(--warn-bg);
+    border: 1.5px solid var(--warn-border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .consent-box h3 { font-size: 0.9rem; font-weight: 700; color: var(--warn-text); margin-bottom: 10px; }
+  .consent-box p { font-size: 0.82rem; line-height: 1.6; color: var(--text); }
+  .consent-box ul { margin: 8px 0 0 16px; font-size: 0.82rem; line-height: 1.8; }
+  .consent-check { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; cursor: pointer; }
+  .consent-check input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary); }
+  .consent-check span { font-size: 0.85rem; font-weight: 600; line-height: 1.4; }
+
+  /* 버튼 */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; transform: none; }
+
+  /* 성공 화면 */
+  .success-screen {
+    text-align: center;
+    padding: 40px 20px;
+    display: none;
+  }
+  .success-icon { font-size: 4rem; margin-bottom: 16px; }
+  .success-screen h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+  .success-screen p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+  /* 관리자 화면 */
+  .admin-screen { display: none; }
+  .claim-list { }
+  .claim-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .claim-card:hover { border-color: var(--primary); }
+  .claim-card .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .claim-card .name { font-weight: 700; font-size: 0.95rem; }
+  .claim-card .date { font-size: 0.75rem; color: var(--muted); }
+  .claim-card .info { font-size: 0.8rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .claim-card .status-badge {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+    background: #dbeafe; color: #1e40af;
+  }
+
+  .detail-view { display: none; }
+  .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .back-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+  .detail-section { margin-bottom: 14px; }
+  .detail-section h4 { font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .detail-item label { font-size: 0.72rem; color: var(--muted); display: block; }
+  .detail-item p { font-size: 0.88rem; font-weight: 600; }
+  .photo-thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .photo-thumb { border-radius: 8px; overflow: hidden; cursor: pointer; }
+  .photo-thumb img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .photo-thumb .thumb-label { font-size: 0.65rem; color: var(--muted); padding: 3px 6px; text-align: center; background: var(--bg); border-top: 1px solid var(--border); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 999;
+    display: none;
+  }
+  .loading-overlay .spinner { width: 44px; height: 44px; border: 4px solid #fff3; border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .loading-overlay p { color: #fff; margin-top: 14px; font-size: 0.9rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 라이트박스 */
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: none; align-items: center; justify-content: center; }
+  .lightbox img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+  .lightbox .close { position: absolute; top: 16px; right: 16px; color: #fff; font-size: 1.8rem; cursor: pointer; background: none; border: none; }
+
+  .photo-remove {
+    display: block; width: 100%; padding: 4px;
+    font-size: 0.72rem; background: #fee2e2; color: var(--danger);
+    border: none; cursor: pointer; text-align: center;
+  }
+
+  @media (max-width: 420px) {
+    .photo-grid { grid-template-columns: 1fr 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .photo-thumb-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* 사전 점검 안내 팝업 */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 2000;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .modal-box {
+    background: var(--card);
+    border-radius: 16px;
+    width: 100%; max-width: 480px;
+    margin: auto;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .modal-top {
+    background: linear-gradient(135deg, #1a56db, #1e40af);
+    color: #fff;
+    padding: 22px 22px 18px;
+    text-align: center;
+  }
+  .modal-top .modal-icon { font-size: 2.4rem; margin-bottom: 8px; }
+  .modal-top h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; }
+  .modal-top p { font-size: 0.8rem; opacity: 0.88; line-height: 1.5; }
+  .modal-body { padding: 18px 20px; max-height: 60vh; overflow-y: auto; }
+  .modal-as-info {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .as-badge {
+    flex: 1; border-radius: 10px; padding: 12px 10px; text-align: center;
+  }
+  .as-badge.seller { background: #dbeafe; border: 1.5px solid #93c5fd; }
+  .as-badge.maker { background: #d1fae5; border: 1.5px solid #6ee7b7; }
+  .as-badge .ab-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .as-badge .ab-period { font-size: 1.1rem; font-weight: 800; color: #1e40af; }
+  .as-badge.maker .ab-period { color: #065f46; }
+  .as-badge .ab-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+  .guide-section { margin-bottom: 14px; }
+  .guide-section h4 {
+    font-size: 0.82rem; font-weight: 700;
+    background: var(--bg); border-radius: 8px;
+    padding: 7px 10px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .guide-section ul { margin-left: 14px; }
+  .guide-section li { font-size: 0.8rem; line-height: 1.7; color: var(--text); }
+  .guide-section li strong { color: var(--danger); }
+  .guide-warn {
+    background: var(--warn-bg); border: 1.5px solid var(--warn-border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    font-size: 0.8rem; line-height: 1.6; color: var(--warn-text);
+  }
+  .modal-footer { padding: 0 20px 20px; }
+  .modal-footer .btn { font-size: 1rem; }
+  .modal-open-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 1px solid var(--border);
+    color: var(--primary); padding: 7px 14px;
+    border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+    font-weight: 600; margin-bottom: 14px;
+  }
+  .modal-open-btn:hover { background: var(--bg); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🔋 배터리 불량 점검 의뢰</h1>
+    <p id="headerSub">아래 정보를 입력하고 점검 사진을 첨부해주세요</p>
+  </div>
+  <div class="header-nav">
+    <button id="adminToggleBtn" onclick="toggleAdmin()">관리자</button>
+  </div>
+</div>
+
+<!-- 로딩 오버레이 -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingMsg">제출 중...</p>
+</div>
+
+<!-- 라이트박스 -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- ===== 사전 점검 안내 팝업 ===== -->
+<div class="modal-overlay" id="guideModal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-icon">🔋</div>
+      <h2>A/S 점검 의뢰 전 확인사항</h2>
+      <p>의뢰서 작성 전 아래 내용을 꼭 읽어주세요</p>
+    </div>
+    <div class="modal-body">
+
+      <!-- A/S 기간 -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:8px;">📅 A/S 보증 기간</div>
+        <div class="modal-as-info">
+          <div class="as-badge seller">
+            <div class="ab-label">판매처 (당사)</div>
+            <div class="ab-period">구매 후 3개월</div>
+            <div class="ab-sub">교환·환불 처리</div>
+          </div>
+          <div class="as-badge maker">
+            <div class="ab-label">제조처 (제조사)</div>
+            <div class="ab-period">구매 후 1년</div>
+            <div class="ab-sub">제조사 직접 A/S</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 자가진단 안내 -->
+      <div class="guide-section">
+        <h4>🔍 1. 외부 점검 / 터미널 점검</h4>
+        <ul>
+          <li>배터리 단자와 터미널 연결이 잘 되어있는지 <strong>손으로 흔들어</strong> 확인 (장착불량 多)</li>
+          <li>파손 여부 좌우 앞뒤 확인</li>
+          <li>구매 후 1개월 이후 파손은 책임 소재 불투명 → 반품/환불 불가</li>
+        </ul>
+      </div>
+      <div class="guide-section">
+        <h4>⚡ 2. 주차 시 (-) 단자 떼놓기 (가장 많은 문제 해결)</h4>
+        <ul>
+          <li>암전류 있는지 자가체크 후 방전 시 → 점프출장으로 시동 후 1시간 이상 충전 (겨울·여름 2시간)</li>
+          <li>충전 후 <strong>(-) 터미널을 해체해 분리</strong>하고 재시도</li>
+          <li>이후에도 시동 불가 → 배터리 충전 또는 불량 의심 가능</li>
+        </ul>
+      </div>
+      <div class="guide-section">
+        <h4>🖥️ 3. 충전불량 의심 시</h4>
+        <ul>
+          <li>블랙박스 충전전압 확인 (정상: <strong>13.5V~15V</strong>)</li>
+          <li>전압이 정상이면 배터리보다 차량 발전기 문제일 가능성 높음</li>
+        </ul>
+      </div>
+
+      <div class="guide-warn">
+        ⚠️ <strong>전문가 점검 없이는 선조치 어렵습니다.</strong><br>
+        위 3가지 자가진단 후에도 문제가 지속되면 아래 의뢰서를 작성해주세요.<br>
+        <span style="font-size:0.75rem;">※ A/S 진단 불가: 차종/연식/연료 맞지 않는 다운그레이드 배터리, 구매 후 1년 초과, 50,000km 초과</span>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeGuideModal()">
+        확인했습니다 → 의뢰서 작성하기
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 고객 제출 폼 ===== -->
+<div id="customerForm">
+
+  <button class="modal-open-btn" onclick="openGuideModal()">📋 사전 점검 안내 다시 보기</button>
+
+  <!-- 고객 정보 -->
+  <div class="card">
+    <h2>👤 고객 정보 <span class="badge">필수</span></h2>
+    <div class="row-2">
+      <div>
+        <label class="required">수령인명</label>
+        <input type="text" id="f_name" placeholder="홍길동">
+      </div>
+      <div>
+        <label class="required">연락처</label>
+        <input type="tel" id="f_phone" placeholder="010-0000-0000">
+      </div>
+    </div>
+    <div>
+      <label class="required">구매처</label>
+      <input type="text" id="f_shop" placeholder="예: 네이버 스마트스토어, 쿠팡">
+    </div>
+    <div class="row-2">
+      <div>
+        <label class="required">구매일자</label>
+        <input type="date" id="f_date">
+      </div>
+      <div>
+        <label class="required">차종</label>
+        <input type="text" id="f_car" placeholder="예: 현대 아반떼">
+      </div>
+    </div>
+    <label>증상 설명 (선택)</label>
+    <textarea id="f_symptom" placeholder="예: 아침에 시동이 안 걸립니다. 배터리 교체 후 2개월째입니다."></textarea>
+  </div>
+
+  <!-- 사진 첨부 -->
+  <div class="card">
+    <h2>📷 점검 사진 첨부 <span class="badge">5장</span></h2>
+    <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">각 항목을 탭하여 사진을 업로드하세요. 사진 없이는 제출이 불가합니다.</p>
+    <div class="photo-grid" id="photoGrid">
+      <!-- JS로 생성 -->
+    </div>
+  </div>
+
+  <!-- 동의서 -->
+  <div class="card">
+    <h2>📋 점검 의뢰 동의서</h2>
+    <div class="consent-box">
+      <h3>⚠️ 점검 전 반드시 확인하세요</h3>
+      <p style="margin-bottom:8px;">📅 <strong>A/S 보증 기간</strong></p>
+      <ul>
+        <li>판매처(당사) A/S: <strong>구매 후 3개월 이내</strong></li>
+        <li>제조처(제조사) A/S: <strong>구매 후 1년 이내</strong></li>
+      </ul>
+      <p style="margin-top:10px;">배터리 불량 의심으로 교환 요청 시, 당사에서 점검 후 <strong>불량이 아닌 것으로 판명될 경우</strong> 아래 사항에 동의하셔야 합니다:</p>
+      <ul>
+        <li>교환 배터리 제품 비용 전액 고객 부담</li>
+        <li>왕복 배송비(발송 + 반송) 고객 부담</li>
+        <li>단자 체결 흔적이 있는 배터리는 재판매 불가로 처리됨</li>
+        <li>점검 결과는 영업일 기준 3~5일 이내 안내</li>
+      </ul>
+      <p style="margin-top:10px; font-size:0.8rem; color:var(--muted);">※ 실제 불량으로 판명 시: 교환 배터리 및 왕복 배송비 당사 전액 부담</p>
+    </div>
+    <label class="consent-check" id="consentLabel">
+      <input type="checkbox" id="consentCheck" onchange="updateSubmitBtn()">
+      <span>위 내용을 모두 확인하였으며, 점검 결과 불량이 아닐 경우 교환 배터리 비용 및 왕복 배송비를 부담할 것에 동의합니다.</span>
+    </label>
+  </div>
+
+  <button class="btn btn-primary" id="submitBtn" onclick="submitClaim()" disabled>
+    📤 점검 의뢰 제출하기
+  </button>
+  <p style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:10px;">제출 후 담당자가 확인 후 연락드립니다</p>
+</div>
+
+<!-- ===== 제출 완료 ===== -->
+<div class="success-screen" id="successScreen">
+  <div class="success-icon">✅</div>
+  <h2>점검 의뢰 제출 완료!</h2>
+  <p>접수가 완료되었습니다.<br>담당자 확인 후 영업일 기준 1~2일 내<br>연락드리겠습니다.</p>
+  <br>
+  <button class="btn btn-primary" onclick="resetForm()" style="max-width:200px; margin:0 auto;">새 의뢰 제출</button>
+</div>
+
+<!-- ===== 관리자 화면 ===== -->
+<div class="admin-screen" id="adminScreen">
+
+  <!-- 목록 -->
+  <div id="adminList">
+    <div class="card">
+      <h2>🗂️ 점검 의뢰 목록</h2>
+      <div id="claimListEl">
+        <div class="empty-state"><div class="icon">📭</div><p>아직 접수된 의뢰가 없습니다</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="detail-view" id="adminDetail">
+    <div class="detail-header">
+      <button class="back-btn" onclick="showAdminList()">← 목록</button>
+      <h2 id="detailTitle" style="font-size:1rem; font-weight:700;">의뢰 상세</h2>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+
+</div>
+
+<script>
+const PHOTO_SLOTS = [
+  { id: 'p1', label: '① 배터리 현황', sub: '현재 배터리 전체 사진' },
+  { id: 'p2', label: '② 배터리 점검', sub: 'CCA·V·내부저항 수치' },
+  { id: 'p3', label: '③ 스타터모터', sub: '시동 시도 시 V 수치' },
+  { id: 'p4', label: '④ 시동 후 전압', sub: '제네레이터·공회전 전압' },
+  { id: 'p5', label: '⑤ 암전류 측정', sub: '암전류 수치 사진' },
+];
+
+let photoData = {}; // slot id -> {base64, name}
+let db = null, isAdmin = false, claims = [];
+
+// ===== 초기화 =====
+(async () => {
+  buildPhotoGrid();
+  setDefaultDate();
+  // 팝업 자동 오픈
+  document.getElementById('guideModal').style.display = 'flex';
+
+  const cap = await claude.use('db');
+  if (cap) {
+    db = cap;
+    listenClaims();
+  }
+})();
+
+function openGuideModal() {
+  document.getElementById('guideModal').style.display = 'flex';
+}
+function closeGuideModal() {
+  document.getElementById('guideModal').style.display = 'none';
+}
+
+function setDefaultDate() {
+  const d = new Date();
+  document.getElementById('f_date').value = d.toISOString().split('T')[0];
+}
+
+// ===== 사진 그리드 =====
+function buildPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = PHOTO_SLOTS.map(s => `
+    <div class="photo-item" id="item_${s.id}" onclick="document.getElementById('file_${s.id}').click()">
+      <input type="file" id="file_${s.id}" accept="image/*" onchange="handlePhoto('${s.id}', this)">
+      <div class="photo-placeholder" id="placeholder_${s.id}">
+        <div class="icon">📷</div>
+        <div class="num">${s.label.split(' ')[0]}</div>
+        <div class="name">${s.label.substring(2)}<br><span style="color:var(--muted)">${s.sub}</span></div>
+      </div>
+      <img class="photo-preview" id="preview_${s.id}" style="display:none" src="" alt="">
+      <div class="photo-label" id="plabel_${s.id}" style="display:none"></div>
+      <button class="photo-remove" id="remove_${s.id}" style="display:none" onclick="removePhoto(event,'${s.id}')">✕ 삭제</button>
+    </div>
+  `).join('');
+}
+
+function handlePhoto(slotId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  resizeImage(file, 1200, 0.82, (base64) => {
+    photoData[slotId] = { base64, name: file.name };
+    document.getElementById('preview_' + slotId).src = base64;
+    document.getElementById('preview_' + slotId).style.display = 'block';
+    document.getElementById('placeholder_' + slotId).style.display = 'none';
+    document.getElementById('plabel_' + slotId).textContent = PHOTO_SLOTS.find(s=>s.id===slotId).label;
+    document.getElementById('plabel_' + slotId).style.display = 'block';
+    document.getElementById('remove_' + slotId).style.display = 'block';
+    document.getElementById('item_' + slotId).classList.add('uploaded');
+    updateSubmitBtn();
+  });
+}
+
+function removePhoto(e, slotId) {
+  e.stopPropagation();
+  delete photoData[slotId];
+  document.getElementById('preview_' + slotId).style.display = 'none';
+  document.getElementById('placeholder_' + slotId).style.display = 'flex';
+  document.getElementById('plabel_' + slotId).style.display = 'none';
+  document.getElementById('remove_' + slotId).style.display = 'none';
+  document.getElementById('item_' + slotId).classList.remove('uploaded');
+  document.getElementById('file_' + slotId).value = '';
+  updateSubmitBtn();
+}
+
+function resizeImage(file, maxW, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===== 유효성 / 버튼 =====
+function updateSubmitBtn() {
+  const allPhotos = PHOTO_SLOTS.every(s => photoData[s.id]);
+  const consent = document.getElementById('consentCheck').checked;
+  const name = document.getElementById('f_name').value.trim();
+  const phone = document.getElementById('f_phone').value.trim();
+  document.getElementById('submitBtn').disabled = !(allPhotos && consent && name && phone);
+}
+['f_name','f_phone','f_shop','f_date','f_car'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSubmitBtn);
+});
+
+// ===== 제출 =====
+async function submitClaim() {
+  const name = document.getElementById('f_name').value.trim();
+  const phone = document.getElementById('f_phone').value.trim();
+  const shop = document.getElementById('f_shop').value.trim();
+  const date = document.getElementById('f_date').value;
+  const car = document.getElementById('f_car').value.trim();
+  const symptom = document.getElementById('f_symptom').value.trim();
+
+  if (!name || !phone) { alert('이름과 연락처를 입력해주세요.'); return; }
+  if (!PHOTO_SLOTS.every(s => photoData[s.id])) { alert('사진 5장을 모두 첨부해주세요.'); return; }
+
+  showLoading('제출 중...');
+
+  try {
+    const docData = {
+      name, phone, shop, purchaseDate: date, car, symptom,
+      submittedAt: new Date().toISOString(),
+      status: '접수완료',
+      photos: Object.fromEntries(
+        PHOTO_SLOTS.map(s => [s.id, { base64: photoData[s.id].base64, label: s.label }])
+      )
+    };
+
+    if (db) {
+      await db.collection('claims').add(docData);
+    }
+
+    hideLoading();
+    document.getElementById('customerForm').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+  } catch(err) {
+    hideLoading();
+    alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.\n' + err.message);
+  }
+}
+
+function resetForm() {
+  document.getElementById('successScreen').style.display = 'none';
+  document.getElementById('customerForm').style.display = 'block';
+  ['f_name','f_phone','f_shop','f_car','f_symptom'].forEach(id => document.getElementById(id).value = '');
+  setDefaultDate();
+  photoData = {};
+  buildPhotoGrid();
+  document.getElementById('consentCheck').checked = false;
+  updateSubmitBtn();
+}
+
+// ===== 관리자 =====
+function toggleAdmin() {
+  isAdmin = !isAdmin;
+  document.getElementById('customerForm').style.display = isAdmin ? 'none' : 'block';
+  document.getElementById('successScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('adminToggleBtn').textContent = isAdmin ? '고객 폼' : '관리자';
+  document.getElementById('headerSub').textContent = isAdmin ? '점검 의뢰 접수 관리' : '아래 정보를 입력하고 점검 사진을 첨부해주세요';
+  if (isAdmin) renderClaimList();
+}
+
+function listenClaims() {
+  if (!db) return;
+  db.collection('claims').orderBy('submittedAt', 'desc').onSnapshot(snap => {
+    claims = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (isAdmin) renderClaimList();
+  });
+}
+
+function renderClaimList() {
+  const el = document.getElementById('claimListEl');
+  if (!claims.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>아직 접수된 의뢰가 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = claims.map((c, i) => `
+    <div class="claim-card" onclick="showDetail('${c.id}')">
+      <div class="meta">
+        <span class="name">${escHtml(c.name)}</span>
+        <span class="status-badge">${escHtml(c.status || '접수완료')}</span>
+      </div>
+      <div class="info">
+        <span>📞 ${escHtml(c.phone)}</span>
+        <span>🚗 ${escHtml(c.car)}</span>
+        <span>📦 ${escHtml(c.shop)}</span>
+        <span>🕐 ${formatDate(c.submittedAt)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showDetail(id) {
+  const c = claims.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('adminList').style.display = 'none';
+  document.getElementById('adminDetail').style.display = 'block';
+  document.getElementById('detailTitle').textContent = c.name + '님 의뢰';
+
+  const photos = c.photos || {};
+  const thumbs = PHOTO_SLOTS.map(s => {
+    const p = photos[s.id];
+    if (!p) return `<div class="photo-thumb"><div style="height:80px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted)">없음</div><div class="thumb-label">${s.label}</div></div>`;
+    return `<div class="photo-thumb" onclick="openLightbox('${p.base64}')"><img src="${p.base64}" alt="${escHtml(s.label)}"><div class="thumb-label">${s.label}</div></div>`;
+  }).join('');
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="card detail-section">
+      <h4>고객 정보</h4>
+      <div class="detail-grid">
+        <div class="detail-item"><label>수령인명</label><p>${escHtml(c.name)}</p></div>
+        <div class="detail-item"><label>연락처</label><p>${escHtml(c.phone)}</p></div>
+        <div class="detail-item"><label>구매처</label><p>${escHtml(c.shop||'-')}</p></div>
+        <div class="detail-item"><label>구매일자</label><p>${escHtml(c.purchaseDate||'-')}</p></div>
+        <div class="detail-item"><label>차종</label><p>${escHtml(c.car||'-')}</p></div>
+      </div>
+      ${c.symptom ? `<div style="margin-top:10px"><label style="font-size:0.72rem;color:var(--muted)">증상 설명</label><p style="font-size:0.85rem;margin-top:4px">${escHtml(c.symptom)}</p></div>` : ''}
+    </div>
+    <div class="card detail-section">
+      <h4>접수 정보</h4>
+      <div class="detail-grid">
+        <div class="detail-item"><label>접수일시</label><p>${formatDate(c.submittedAt)}</p></div>
+        <div class="detail-item"><label>상태</label><p>${escHtml(c.status||'접수완료')}</p></div>
+      </div>
+    </div>
+    <div class="card detail-section">
+      <h4>점검 사진 (클릭하면 크게 보기)</h4>
+      <div class="photo-thumb-grid">${thumbs}</div>
+    </div>
+  `;
+}
+
+function showAdminList() {
+  document.getElementById('adminList').style.display = 'block';
+  document.getElementById('adminDetail').style.display = 'none';
+}
+
+// ===== 라이트박스 =====
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+}
+
+// ===== 유틸 =====
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  } catch { return iso; }
+}
+</script>
+</body>
+</html>

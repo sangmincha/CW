@@ -401,30 +401,6 @@
   <button class="btn btn-primary" onclick="resetForm()" style="max-width:200px; margin:0 auto;">새 의뢰 제출</button>
 </div>
 
-<!-- ===== 관리자 화면 ===== -->
-<div class="admin-screen" id="adminScreen">
-
-  <!-- 목록 -->
-  <div id="adminList">
-    <div class="card">
-      <h2>🗂️ 점검 의뢰 목록</h2>
-      <div id="claimListEl">
-        <div class="empty-state"><div class="icon">📭</div><p>아직 접수된 의뢰가 없습니다</p></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 상세 -->
-  <div class="detail-view" id="adminDetail">
-    <div class="detail-header">
-      <button class="back-btn" onclick="showAdminList()">← 목록</button>
-      <h2 id="detailTitle" style="font-size:1rem; font-weight:700;">의뢰 상세</h2>
-    </div>
-    <div id="detailContent"></div>
-  </div>
-
-</div>
-
 <script>
 const PHOTO_SLOTS = [
   { id: 'p1', label: '① 배터리 현황', sub: '현재 배터리 전체 사진' },

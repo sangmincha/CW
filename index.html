@@ -668,18 +668,25 @@ async function submitClaim() {
   await new Promise(resolve => requestAnimationFrame(resolve));
 
   const docData = {
-    name,
-    phone,
-    shop,
-    purchaseDate: date,
-    car,
-    symptom,
-    consent: true,
-    consentText: document.querySelector('#claimConsentLabel span').innerText,
-    privacyConsent: true,
-    privacyConsentText: document.querySelector('#privacyConsentLabel span').innerText,
-    submittedAt: new Date().toISOString(),
-    photos: {}
+   name,
+   phone,
+   shop,
+   purchaseDate: date,
+   car,
+   symptom,
+
+  // 필수 동의 2개
+  inspectionConsent: true,
+  inspectionConsentText:
+    document.querySelector('#claimConsentLabel span').innerText,
+
+  privacyConsent: true,
+  privacyConsentText:
+    document.querySelector('#privacyConsentLabel span').innerText,
+
+  submittedAt: new Date().toISOString(),
+
+  photos: {}
   };
 
   PHOTO_SLOTS.forEach(s => {

@@ -459,7 +459,7 @@
       </div>
       <div>
         <label class="required">연락처</label>
-        <input type="tel" id="f_phone" placeholder="010-0000-0000">
+        <input type="tel" id="f_phone" inputmode="numeric" maxlength="13" placeholder="010-0000-0000">
       </div>
     </div>
     <div>
@@ -710,6 +710,15 @@ function updateSubmitBtn() {
   document.getElementById('submitBtn').disabled =
     !(allPhotos && consent && privacyConsent && name && phone && shop && date && car) || submitting;
 }
+
+// 연락처 자동 하이픈 (010-0000-0000)
+document.getElementById('f_phone').addEventListener('input', function() {
+  const d = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+  let out = d;
+  if (d.length > 7) out = d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+  else if (d.length > 3) out = d.slice(0,3) + '-' + d.slice(3);
+  this.value = out;
+});
 
 ['f_name','f_phone','f_shop','f_date','f_car'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateSubmitBtn);

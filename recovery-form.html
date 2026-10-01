@@ -116,6 +116,29 @@
   .done-info-row .lbl { color:#9ca3af; }
   .done-info-row .val { font-weight:700; color:#111; text-align:right; flex:1; margin-left:12px; }
 
+  .close-btn {
+    display:block;
+    width:100%;
+    max-width:360px;
+    margin:18px auto 0;
+    padding:14px 16px;
+    background:#e5e7eb;
+    color:#374151;
+    border:none;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .close-btn:active { opacity:.8; }
+  .close-message {
+    display:none;
+    margin-top:10px;
+    font-size:12px;
+    color:#9ca3af;
+  }
+
   .spinner { display:inline-block; width:18px; height:18px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
@@ -242,6 +265,8 @@
   <div class="done-desc">담당자가 확인 후 회수 일정을 조율하겠습니다.<br>감사합니다 😊</div>
   <div class="done-info" id="doneInfo"></div>
   <div class="done-desc" style="font-size:13px; color:#9ca3af">문의: 1566-4426</div>
+  <button class="close-btn" type="button" onclick="closePage()">페이지 닫기</button>
+  <div id="closeMessage" class="close-message">브라우저에서 현재 탭을 닫아주세요.</div>
 </div>
 
 <!-- 카카오 우편번호 API -->
@@ -300,6 +325,8 @@
       상세주소: document.getElementById('addr2').value.trim(),
       수량: document.getElementById('count').value,
       요청사항: document.getElementById('memo').value.trim(),
+      privacyConsent: true,
+      privacyConsentText: '개인정보 수집 및 이용에 동의합니다 (필수)',
       신청일시: new Date().toLocaleString('ko-KR'),
     };
 
@@ -331,6 +358,14 @@
       btn.disabled=false;
       btn.innerHTML='회수 신청하기';
     }
+  }
+
+  function closePage() {
+    window.close();
+
+    setTimeout(function() {
+      document.getElementById('closeMessage').style.display = 'block';
+    }, 300);
   }
 </script>
 </body>

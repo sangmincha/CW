@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="만덕이">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1c1c1e">
+<link rel="apple-touch-icon" id="icon" href="">
+<title>만덕이 다이어리</title>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--tx:#222;--sub:#8a8a8a;--ac:#f08a5d;--ac2:#5d9cf0;--ac3:#7bc67e;--ln:#e6e1d9}
+@media(prefers-color-scheme:dark){:root{--bg:#121214;--card:#1e1e22;--tx:#f0f0f0;--sub:#8e8e93;--ln:#2c2c30}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;
+padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 100px);max-width:520px;margin:0 auto}
+h1{font-size:18px;margin:0 0 12px}
+.card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px}
+.big{font-size:38px;font-weight:700;margin:2px 0}
+.sub{color:var(--sub);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button{font:inherit;border:0;border-radius:14px;padding:16px 0;flex:1;min-width:70px;font-size:17px;font-weight:600;color:#fff;background:var(--ac)}
+button:active{transform:scale(.96);opacity:.85}
+.b2{background:var(--ac2)}.b3{background:var(--ac3)}
+.gray{background:var(--ln);color:var(--tx);font-size:14px;padding:10px 0}
+.sleep{background:#8a6df0}.sleep.on{background:#e0555b}
+.sum{display:flex;justify-content:space-around;text-align:center}
+.sum b{display:block;font-size:22px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--ln);font-size:15px}
+.item:last-child{border:0}
+.item button{flex:none;min-width:0;padding:4px 10px;font-size:13px;background:var(--ln);color:var(--sub)}
+select,input,textarea{font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);flex:1;min-width:0}
+section{display:none}section.on{display:block}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:flex;background:var(--card);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{background:none;color:var(--sub);border-radius:0;padding:8px 0 6px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+nav button span{font-size:22px;line-height:1.1}
+nav button.on{color:var(--ac)}nav button:active{transform:none}
+.di{flex:none;width:138px;padding:8px;font-size:14px}
+textarea{width:100%;resize:vertical}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block}
+.th{position:relative}
+.th i{position:absolute;top:4px;right:4px;background:#000b;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-style:normal;font-size:13px}
+.sm{flex:none;min-width:0;padding:4px 10px;font-size:13px;background:var(--ln);color:var(--sub)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 80px);transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  <div><h1 id="title" style="margin:0">👶 만덕이 다이어리</h1><div class="sub" id="ageinfo"></div><div class="sub" id="syncSt" onclick="doSync()"></div></div>
+  <button class="gray" style="flex:none;padding:8px 12px" onclick="toggleSet()">⚙️</button>
+</div>
+<div class="card" id="setCard" style="display:none">
+  <b>⚙️ 아기 정보</b>
+  <div class="row"><input id="pName" placeholder="이름 (예: 만덕이)" maxlength="12"></div>
+  <div class="row"><input id="pBirth" type="date"></div>
+  <div class="sub" style="margin-top:6px">생일 (태어나기 전이면 출산 예정일)</div>
+  <div class="row"><button onclick="saveProfile()">저장</button></div>
+  <hr style="border:0;border-top:1px solid var(--ln);margin:14px 0">
+  <b>☁️ 구글 시트 연동</b>
+  <div class="row"><input id="cUrl" placeholder="웹앱 URL (https://script.google.com/...)"></div>
+  <div class="row"><input id="cKey" placeholder="비밀번호"></div>
+  <div class="row"><button class="b3" onclick="saveCfg()">연결하고 동기화</button></div>
+  <div class="row"><button class="gray" onclick="offCfg()">연동 끄기</button></div>
+</div>
+
+<section id="tab-rec">
+<div id="vaxBanner"></div>
+<div class="card">
+  <div class="sub">마지막 수유 후</div>
+  <div class="big" id="since">--</div>
+  <div class="sub" id="lastinfo"></div>
+</div>
+
+<div class="card">
+  <b>🍼 분유 (ml)</b>
+  <div class="row">
+    <button onclick="milk(60)">60</button><button onclick="milk(90)">90</button>
+    <button onclick="milk(120)">120</button><button onclick="milk(150)">150</button>
+  </div>
+  <div class="row"><button class="gray" onclick="milkCustom()">직접 입력</button></div>
+</div>
+
+<div class="card">
+  <b>🧷 기저귀</b>
+  <div class="row">
+    <button class="b2" onclick="diaper('소변')">소변</button>
+    <button class="b2" onclick="diaper('대변')">대변</button>
+    <button class="b2" onclick="diaper('소변+대변')">둘 다</button>
+  </div>
+</div>
+
+<div class="card">
+  <b>😴 수면</b>
+  <div class="sub" id="sleepinfo"></div>
+  <div class="row"><button id="sleepBtn" class="sleep" onclick="sleep()">수면 시작</button></div>
+</div>
+
+<div class="card">
+  <b>📊 오늘</b>
+  <div class="sum" style="margin-top:10px">
+    <div><b id="sMilk">0</b><span class="sub">분유 ml</span></div>
+    <div><b id="sMilkN">0</b><span class="sub">수유 횟수</span></div>
+    <div><b id="sDia">0</b><span class="sub">기저귀</span></div>
+    <div><b id="sSleep">0</b><span class="sub">수면</span></div>
+  </div>
+  <div class="sub" id="sStool" style="text-align:center;margin-top:6px"></div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <b>📝 최근 기록</b>
+    <button class="gray" style="flex:none;padding:6px 12px" onclick="undo()">방금 취소</button>
+  </div>
+  <div id="list" style="margin-top:6px"></div>
+</div>
+
+<div class="card">
+  <b>✏️ 놓친 기록 추가</b>
+  <div class="row">
+    <select id="mType" onchange="mSync()">
+      <option value="milk">🍼 분유</option><option value="소변">🧷 소변</option>
+      <option value="대변">🧷 대변</option><option value="소변+대변">🧷 소변+대변</option>
+      <option value="sleep-start">🌙 수면 시작</option><option value="sleep-end">☀️ 기상</option>
+    </select>
+    <input id="mMl" type="number" inputmode="numeric" placeholder="ml (분유만)">
+    <select id="mStool" style="display:none"><option value="">똥 종류 선택 안 함</option><option>황금똥</option><option>일반</option><option>토끼똥</option><option>설사</option></select>
+  </div>
+  <div class="row"><input id="mTime" type="datetime-local"></div>
+  <div class="row"><button class="gray" onclick="manual()">이 시간으로 추가</button></div>
+</div>
+
+
+
+</section>
+
+<section id="tab-hist">
+<div class="card">
+  <b>📅 날짜별 기록</b>
+  <div class="row" style="align-items:center">
+    <button class="gray" style="flex:none;padding:10px 16px" onclick="shiftD(-1)">◀</button>
+    <input id="hDate" type="date" onchange="renderHist()">
+    <button class="gray" style="flex:none;padding:10px 16px" onclick="shiftD(1)">▶</button>
+  </div>
+  <div class="sum" style="margin:14px 0 6px">
+    <div><b id="hMilk">0</b><span class="sub">분유 ml</span></div>
+    <div><b id="hMilkN">0</b><span class="sub">수유</span></div>
+    <div><b id="hDia">0</b><span class="sub">기저귀</span></div>
+    <div><b id="hSleep">0</b><span class="sub">수면</span></div>
+  </div>
+  <div class="sub" id="hStool" style="text-align:center;margin-bottom:6px"></div>
+  <div id="hList"></div>
+</div>
+</section>
+
+<section id="tab-vax">
+<div class="card">
+  <b>💉 예방접종 일정</b>
+  <div class="sub" style="margin:4px 0 6px">표준 일정 기준 · 날짜를 눌러 바꾸고, 맞으면 체크</div>
+  <div id="vaxList"></div>
+  <div class="row"><button class="gray" id="vaxMore" onclick="vaxAll=!vaxAll;renderVax()"></button></div>
+  <div class="row"><button class="b2" onclick="vaxICS()">📅 아이폰 캘린더에 알림 넣기</button></div>
+  <div class="sub" style="margin-top:8px">혼합백신 사용 등으로 횟수·시기가 달라질 수 있어요. 실제 접종은 소아과 안내가 우선!</div>
+</div>
+
+</section>
+
+<section id="tab-diary">
+<div class="card">
+  <b id="dTitle">📖 일기 쓰기</b>
+  <div class="row"><input id="dDate" type="date"></div>
+  <div class="row"><textarea id="dText" rows="4" placeholder="오늘 만덕이는 어땠나요?"></textarea></div>
+  <div id="dPrev" class="grid"></div>
+  <div class="row"><button class="b3" onclick="$('dFile').click()">📷 사진 추가</button></div>
+  <input id="dFile" type="file" accept="image/*" multiple hidden onchange="pickPhotos(this)">
+  <div class="row"><button onclick="saveDiary()">저장</button><button class="gray" id="dCancel" style="display:none" onclick="resetDiary()">수정 취소</button></div>
+</div>
+<div id="dList"></div>
+<div class="row"><button class="gray" id="dMore" style="display:none" onclick="dLimit+=20;renderDiary()">더 보기</button></div>
+</section>
+
+<section id="tab-grow">
+<div class="card">
+  <b id="gTitle">📏 키 · 몸무게 기록</b>
+  <div class="row"><input id="gDate" type="date"></div>
+  <div class="row"><input id="gH" type="number" inputmode="decimal" step="0.1" placeholder="키 (cm)"><input id="gW" type="number" inputmode="decimal" step="0.01" placeholder="몸무게 (kg)"></div>
+  <div class="row"><button onclick="saveGrow()">저장</button><button class="gray" id="gCancel" style="display:none" onclick="resetGrow()">수정 취소</button></div>
+</div>
+<div class="card" id="gChart" style="display:none"></div>
+<div class="card"><b>📋 기록</b><div id="gList" style="margin-top:6px"></div>
+  <div class="sub" style="margin-top:8px">성장 백분위는 영유아 건강검진 때 소아과에서 확인하세요</div></div>
+</section>
+
+<section id="tab-tips">
+<div class="card"><b>💡 시기별 할 일 · 팁</b><div id="tipsBox" style="margin-top:8px"></div></div>
+</section>
+
+<nav>
+  <button data-t="rec" onclick="tab('rec')"><span>🍼</span>기록</button>
+  <button data-t="hist" onclick="tab('hist')"><span>📅</span>날짜별</button>
+  <button data-t="diary" onclick="tab('diary')"><span>📖</span>일기</button>
+  <button data-t="grow" onclick="tab('grow')"><span>📏</span>성장</button>
+  <button data-t="vax" onclick="tab('vax')"><span>💉</span>접종</button>
+  <button data-t="tips" onclick="tab('tips')"><span>💡</span>팁</button>
+</nav>
+<div id="sheet" onclick="if(event.target===this)closeSheet()" style="display:none;position:fixed;inset:0;background:#0008;z-index:30;align-items:flex-end;justify-content:center">
+  <div class="card" style="width:100%;max-width:520px;margin:0;border-radius:18px 18px 0 0;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)">
+    <b>💩 똥은 어땠어요?</b>
+    <div class="row" id="stoolBtns"></div>
+    <div class="sub" style="margin-top:8px">피가 섞였거나 흰색·회색 변이면 바로 소아과에 문의하세요</div>
+    <div class="row"><button class="gray" onclick="pickStool('')">선택 안 함</button><button class="gray" onclick="closeSheet()">취소</button></div>
+  </div>
+</div>
+<div id="viewer" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:#000e;z-index:20;align-items:center;justify-content:center"><img id="vImg" style="max-width:100%;max-height:100%"></div>
+
+<div id="toast"></div>
+
+<script>
+const KEY='mandeok_log';
+let log=[];
+try{log=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(log))}catch(e){}kick()};
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const dur=ms=>{const m=Math.floor(ms/60000);return m<60?m+'분':Math.floor(m/60)+'시간 '+pad(m%60)+'분'};
+const sameDay=t=>new Date(t).toDateString()===new Date().toDateString();
+
+const PK='mandeok_profile';
+let prof={};try{prof=JSON.parse(localStorage.getItem(PK)||'{}')}catch(e){}
+function toggleSet(){const c=$('setCard');const open=c.style.display==='none';c.style.display=open?'block':'none';$('pName').value=prof.name||'';$('pBirth').value=prof.birth||'';$('cUrl').value=cfg.url||'';$('cKey').value=cfg.key||''}
+function saveProfile(){prof={name:$('pName').value.trim(),birth:$('pBirth').value};try{localStorage.setItem(PK,JSON.stringify(prof))}catch(e){}$('setCard').style.display='none';render();toast('저장됨');kick()}
+function renderProfile(){
+  const n=prof.name||'만덕이';$('title').textContent='👶 '+n+' 다이어리';document.title=n+' 다이어리';
+  let t='';
+  if(prof.birth){const d=Math.round((new Date().setHours(0,0,0,0)-new Date(prof.birth+'T00:00').getTime())/864e5);
+    t=d<0?'출산 예정일까지 D-'+(-d):d===0?'오늘이 생일 🎉':'생후 '+d+'일'+(d>=30?' · 약 '+Math.floor(d/30.4)+'개월':'')}
+  $('ageinfo').textContent=t;
+}
+const VK='mandeok_vax';let vax={};try{vax=JSON.parse(localStorage.getItem(VK)||'{}')}catch(e){}
+let vaxAll=false;
+let vdate={};try{vdate=JSON.parse(localStorage.getItem('mandeok_vaxdate')||'{}')}catch(e){}
+const V=[
+['hepb1','B형간염 1차',{d:0},'출생 직후(병원)'],['bcg','BCG(결핵)',{d:0},'생후 4주 이내'],
+['hepb2','B형간염 2차',{m:1},''],
+['dtap1','DTaP 1차',{m:2},''],['ipv1','IPV(폴리오) 1차',{m:2},''],['hib1','Hib 1차',{m:2},''],['pcv1','폐렴구균 1차',{m:2},''],['rv1','로타 1차',{m:2},'생후 14주 6일 이내 시작'],
+['dtap2','DTaP 2차',{m:4},''],['ipv2','IPV 2차',{m:4},''],['hib2','Hib 2차',{m:4},''],['pcv2','폐렴구균 2차',{m:4},''],['rv2','로타 2차',{m:4},''],
+['hepb3','B형간염 3차',{m:6},''],['dtap3','DTaP 3차',{m:6},''],['ipv3','IPV 3차',{m:6},'6~18개월'],['hib3','Hib 3차',{m:6},''],['pcv3','폐렴구균 3차',{m:6},''],['rv3','로타 3차',{m:6},'로타텍 제품만'],
+['flu','인플루엔자(독감)',{m:6},'6개월부터 매년 가을, 첫해 2회'],
+['mmr1','MMR 1차',{m:12},''],['var','수두',{m:12},''],['hepa1','A형간염 1차',{m:12},''],['ijev1','일본뇌염(불활성) 1차',{m:12},''],['hib4','Hib 4차',{m:12},'12~15개월'],['pcv4','폐렴구균 4차',{m:12},'12~15개월'],
+['ijev2','일본뇌염 2차',{m:13},'1차 후 1개월'],['dtap4','DTaP 4차',{m:15},'15~18개월'],['hepa2','A형간염 2차',{m:18},'1차 후 6개월 이상'],
+['ijev3','일본뇌염 3차',{m:24},''],['dtap5','DTaP 5차',{m:48},'만 4~6세'],['ipv4','IPV 4차',{m:48},'만 4~6세'],['mmr2','MMR 2차',{m:48},'만 4~6세']
+];
+const dd=t=>Math.round((t-new Date().setHours(0,0,0,0))/864e5);
+function vaxItems(){
+  if(!prof.birth)return[];
+  const b=new Date(prof.birth+'T00:00');
+  return V.map(([id,n,o,note])=>{const d=new Date(b);if(o.m)d.setMonth(d.getMonth()+o.m);else d.setDate(d.getDate()+o.d);const o2=vdate[id];return{id,n,note,ov:!!o2,t:o2?new Date(o2+'T00:00').getTime():d.getTime()}}).sort((a,c)=>a.t-c.t);
+}
+function setVaxDate(id,v){if(v)vdate[id]=v;else delete vdate[id];try{localStorage.setItem('mandeok_vaxdate',JSON.stringify(vdate))}catch(e){}renderVax();kick()}
+function toggleVax(id){if(vax[id])delete vax[id];else vax[id]=ymd(Date.now());try{localStorage.setItem(VK,JSON.stringify(vax))}catch(e){}renderVax();kick()}
+function renderVax(){
+  const it=vaxItems(),el=$('vaxList');
+  if(!it.length){el.innerHTML='<div class="sub">⚙️에서 생일(출산 예정일)을 입력하면 일정이 계산돼요</div>';$('vaxBanner').innerHTML='';$('vaxMore').style.display='none';return}
+  $('vaxMore').style.display='';
+  const pend=it.filter(x=>!vax[x.id]),show=vaxAll?it:pend.slice(0,6);
+  const bd=d=>d<0?'<span style="color:#e0555b">'+(-d)+'일 지남</span>':d===0?'오늘':'D-'+d;
+  el.innerHTML=show.map(x=>{const d=dd(x.t),dn=vax[x.id];
+    return `<div class="item" style="${dn?'opacity:.55':''}"><label style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><input type="checkbox" style="flex:none;width:22px;height:22px;padding:0" ${dn?'checked':''} onchange="toggleVax('${x.id}')"><span style="min-width:0">${x.n}<br><span class="sub">${dn?'✅ 접종 완료':bd(d)} ${x.note}${x.ov?' <u onclick="event.preventDefault();setVaxDate(\''+x.id+'\',\'\')">원래 날짜로</u>':''}</span></span></label><input type="date" class="di" value="${ymd(x.t)}" onchange="setVaxDate('${x.id}',this.value)"></div>`}).join('')||'<div class="sub">모든 접종 완료 🎉</div>';
+  $('vaxMore').textContent=vaxAll?'예정된 것만 보기':'전체 일정 보기 ('+it.length+'개)';
+  const soon=pend.filter(x=>dd(x.t)<=7).slice(0,4);
+  $('vaxBanner').innerHTML=soon.length?'<div class="card" style="border:2px solid var(--ac)"><b>💉 접종 확인하세요</b>'+soon.map(x=>'<div style="margin-top:4px">'+x.n+' · '+bd(dd(x.t))+'</div>').join('')+'</div>':'';
+}
+function vaxICS(){
+  const it=vaxItems().filter(x=>!vax[x.id]&&dd(x.t)>=0);
+  if(!it.length){alert('캘린더에 넣을 예정 일정이 없어요');return}
+  const f=t=>ymd(t).replace(/-/g,''),nm=prof.name||'만덕이',st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  let c='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//mandeok//KO\r\n';
+  it.forEach(x=>{const e=new Date(x.t);e.setDate(e.getDate()+1);
+    c+='BEGIN:VEVENT\r\nUID:'+x.id+'-'+f(x.t)+'@mandeok\r\nDTSTAMP:'+st+'\r\nDTSTART;VALUE=DATE:'+f(x.t)+'\r\nDTEND;VALUE=DATE:'+f(e.getTime())+'\r\nSUMMARY:💉 '+nm+' '+x.n+'\r\nDESCRIPTION:권장 시기 기준. 실제 일정은 소아과와 상의\r\nBEGIN:VALARM\r\nTRIGGER:-PT15H\r\nACTION:DISPLAY\r\nDESCRIPTION:내일 예방접종\r\nEND:VALARM\r\nBEGIN:VALARM\r\nTRIGGER:PT9H\r\nACTION:DISPLAY\r\nDESCRIPTION:오늘 예방접종\r\nEND:VALARM\r\nEND:VEVENT\r\n'});
+  c+='END:VCALENDAR';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/calendar'}));a.download='mandeok_vaccine.ics';document.body.appendChild(a);a.click();a.remove();
+}
+const TIPS=[
+[-9999,'🤰 출산 전 준비',['신생아용 카시트 미리 설치해보기 (퇴원하는 날부터 필수)','집 근처 소아과, 밤에 갈 수 있는 응급실 위치 확인','체온계·수유용품·기저귀 준비','출생신고와 정부 지원(첫만남이용권·부모급여·아동수당) 신청 방법 미리 확인 (복지로)','아기 침대엔 단단한 매트리스만, 베개·이불·인형은 두지 않기']],
+[0,'👶 신생아 (~4주)',['출생신고는 출생 후 1개월 이내','첫만남이용권·부모급여·아동수당 신청은 서둘러 (기한 지나면 소급 안 될 수 있음)','BCG는 생후 4주 이내, B형간염 1차는 출생 시 접종 여부 확인','1차 영유아 건강검진 (생후 14~35일) 예약','재울 땐 항상 등을 대고 눕히기','생후 3개월 미만이 38.0℃ 이상 열나면 바로 병원','분유 수유 간격은 보통 2~4시간, 아기마다 달라요. 첫 주 이후 소변 기저귀가 하루 6장 안팎이면 잘 먹는 편']],
+[28,'🍼 1~2개월',['2개월 접종이 한꺼번에 많아서 미리 예약 (로타 1차는 생후 14주 6일까지)','깨어 있을 때 짧게 엎드려 놀기(터미타임), 꼭 지켜보면서','눈 맞추고 말 많이 걸어주기','B형간염 2차 (1개월)']],
+[60,'💉 2~4개월',['접종 후 미열·보챔은 흔해요. 38℃ 이상 계속되거나 축 처지면 병원 상담','접종 후 20~30분은 병원 근처에서 지켜보기','뒤집기 시작할 수 있어요. 혼자 두고 자리 비우지 않기','낮엔 밝게, 밤엔 어둡고 조용하게 해서 밤낮 구분 도와주기']],
+[120,'🥣 4~6개월',['2차 영유아 건강검진 (4~6개월)','이유식 준비 (시작은 4~6개월 사이, 소아과와 상담)','손에 잡히는 건 입으로 가져가요. 작은 물건·약·세제 치우기','6개월 접종(3차) + 독감 접종 시기 확인']],
+[180,'🥄 6~9개월',['이유식은 새 재료를 하나씩, 며칠 간격으로 시작','꿀은 만 12개월 전까지 금지','앉기·기기 시작: 콘센트 덮개, 모서리 보호대, 계단 안전문','독감 접종 첫해는 4주 간격으로 2회','첫니가 날 수 있고, 낯가림도 시작돼요']],
+[270,'🧸 9~12개월',['3차 영유아 건강검진 (9~12개월)','12개월 접종(MMR·수두·A형간염·일본뇌염·폐렴구균·Hib)이 몰려 있어 돌 전에 예약','컵 연습, 핑거푸드 시작 (통포도·견과류 등 질식 위험 음식은 피하기)','잡고 서기·걷기 준비: 바닥 안전 점검']],
+[365,'🚶 12~18개월',['12개월 이후 생우유 전환 가능 (소아과와 상담)','젖병 졸업을 슬슬 준비 (컵으로)','15~18개월 DTaP 4차, A형간염 2차는 1차 후 6개월 이상','말이 거의 안 늘면 건강검진 때 상담']],
+[546,'🗣️ 18개월~',['4차 영유아 건강검진 (18~24개월), 발달 선별검사 포함','언어가 빠르게 늘어요. 책 읽어주기, 영상 시간은 가능한 줄이기','이후 접종: 만 4~6세 DTaP 5차·IPV 4차·MMR 2차']]
+];
+function renderTips(){
+  const el=$('tipsBox');
+  if(!prof.birth){el.innerHTML='<div class="sub">⚙️에서 생일(출산 예정일)을 입력하면 시기별 팁이 나와요</div>';return}
+  const d=Math.round((new Date().setHours(0,0,0,0)-new Date(prof.birth+'T00:00').getTime())/864e5);
+  let i=0;TIPS.forEach((t,k)=>{if(d>=t[0])i=k});
+  const ul=a=>'<ul style="margin:8px 0 0;padding-left:20px;line-height:1.6">'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  const nx=TIPS[i+1];
+  el.innerHTML='<div><b>'+TIPS[i][1]+'</b> <span class="sub">(지금)</span></div>'+ul(TIPS[i][2])
+   +(nx?'<details style="margin-top:12px"><summary class="sub">다음 시기 미리보기: '+nx[1]+'</summary>'+ul(nx[2])+'</details>':'')
+   +'<details style="margin-top:8px"><summary class="sub">전체 시기 보기</summary>'+TIPS.map(t=>'<div style="margin-top:10px"><b>'+t[1]+'</b>'+ul(t[2])+'</div>').join('')+'</details>'
+   +'<div class="sub" style="margin-top:10px">일반적인 권장 내용이에요. 아기마다 다르니 걱정되면 소아과에 물어보세요.</div>';
+}
+const TABS=['rec','hist','diary','grow','vax','tips'];
+function tab(n){if(!TABS.includes(n))n='rec';
+  TABS.forEach(k=>{$('tab-'+k).classList.toggle('on',k===n);document.querySelector('nav [data-t="'+k+'"]').classList.toggle('on',k===n)});
+  try{localStorage.setItem('mandeok_tab',n)}catch(e){}window.scrollTo(0,0)}
+
+// ----- 일기 (IndexedDB: 사진 용량 때문에) -----
+let db=null,dPhotos=[],dPids=[],dEditId=null,dLimit=20,dCache=[];
+const idb=()=>new Promise((res,rej)=>{if(db)return res(db);const r=indexedDB.open('mandeok_diary',1);r.onupgradeneeded=()=>r.result.createObjectStore('e',{keyPath:'id'});r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error)});
+const tx=(m,fn)=>idb().then(d=>new Promise((res,rej)=>{const t=d.transaction('e',m),q=fn(t.objectStore('e'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
+const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function shrink(file){return new Promise((res,rej)=>{
+  const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');
+    c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.78))};
+  im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
+async function pickPhotos(inp){
+  for(const f of inp.files){try{dPhotos.push(await shrink(f));dPids.push(null)}catch(e){alert('이 사진은 불러오지 못했어요')}}
+  inp.value='';prevPhotos()}
+function prevPhotos(){$('dPrev').innerHTML=dPhotos.map((p,i)=>`<div class="th"><img src="${p}"><i onclick="dPhotos.splice(${i},1);dPids.splice(${i},1);prevPhotos()">✕</i></div>`).join('')}
+function resetDiary(){dEditId=null;dPhotos=[];dPids=[];$('dText').value='';$('dDate').value=ymd(Date.now());$('dTitle').textContent='📖 일기 쓰기';$('dCancel').style.display='none';prevPhotos()}
+async function saveDiary(){
+  const text=$('dText').value.trim();
+  if(!text&&!dPhotos.length){alert('글이나 사진을 하나는 넣어줘');return}
+  try{await tx('readwrite',s=>s.put({id:dEditId||Date.now(),date:$('dDate').value||ymd(Date.now()),text,photos:dPhotos,pids:dPids}))}
+  catch(e){alert('저장에 실패했어요. 사진을 줄여서 다시 해봐');return}
+  toast(dEditId?'✏️ 수정됨':'📖 저장됨');resetDiary();renderDiary();kick()}
+async function renderDiary(){
+  try{dCache=(await tx('readonly',s=>s.getAll()))||[]}catch(e){dCache=[]}
+  dCache.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  const age=ds=>{if(!prof.birth)return'';const d=Math.round((new Date(ds+'T00:00')-new Date(prof.birth+'T00:00'))/864e5);return d>=0?' · 생후 '+d+'일':''};
+  $('dList').innerHTML=dCache.slice(0,dLimit).map(e=>{
+    const dt=new Date(e.date+'T00:00').toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
+    return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${dt}<span class="sub">${age(e.date)}</span></b><span><button class="sm" onclick="editDiary(${e.id})">수정</button> <button class="sm" onclick="delDiary(${e.id})">삭제</button></span></div>`
+     +(e.photos.length?'<div class="grid">'+e.photos.map((p,i)=>`<img src="${p}" onclick="viewImg(${e.id},${i})">`).join('')+'</div>':'')
+     +(e.text?'<div style="white-space:pre-wrap;margin-top:8px;line-height:1.5">'+esc(e.text)+'</div>':'')+'</div>'}).join('')
+    ||'<div class="sub" style="text-align:center;padding:20px">첫 일기를 써보세요 📷</div>';
+  $('dMore').style.display=dCache.length>dLimit?'':'none'}
+function viewImg(id,i){const e=dCache.find(x=>x.id===id);if(!e)return;$('vImg').src=e.photos[i];$('viewer').style.display='flex'}
+function editDiary(id){const e=dCache.find(x=>x.id===id);if(!e)return;
+  dEditId=id;dPhotos=[...e.photos];dPids=e.photos.map((_,i)=>(e.pids||[])[i]||null);$('dText').value=e.text;$('dDate').value=e.date;$('dTitle').textContent='✏️ 일기 수정';$('dCancel').style.display='';prevPhotos();window.scrollTo(0,0)}
+async function delDiary(id){if(!confirm('이 일기를 삭제할까요? (사진도 같이 지워져요)'))return;
+  await tx('readwrite',s=>s.delete(id));renderDiary();kick()}
+const GK='mandeok_growth';let grow=[],gEdit=null;
+try{grow=JSON.parse(localStorage.getItem(GK)||'[]')}catch(e){}
+const gSave=()=>{try{localStorage.setItem(GK,JSON.stringify(grow))}catch(e){}kick()};
+function saveGrow(){
+  const h=parseFloat($('gH').value),w=parseFloat($('gW').value);
+  if(!(h>0)&&!(w>0)){alert('키나 몸무게 중 하나는 넣어줘');return}
+  const r={id:gEdit||Date.now(),date:$('gDate').value||ymd(Date.now()),h:h>0?h:null,w:w>0?w:null};
+  if(gEdit)grow=grow.map(x=>x.id===gEdit?r:x);else grow.push(r);
+  gSave();toast('📏 저장됨');resetGrow();renderGrow()}
+function resetGrow(){gEdit=null;$('gH').value='';$('gW').value='';$('gDate').value=ymd(Date.now());$('gTitle').textContent='📏 키 · 몸무게 기록';$('gCancel').style.display='none'}
+function editGrow(id){const r=grow.find(x=>x.id===id);if(!r)return;gEdit=id;$('gDate').value=r.date;$('gH').value=r.h||'';$('gW').value=r.w||'';$('gTitle').textContent='✏️ 수정 중';$('gCancel').style.display='';window.scrollTo(0,0)}
+function delGrow(id){if(!confirm('이 기록을 삭제할까요?'))return;grow=grow.filter(x=>x.id!==id);gSave();renderGrow()}
+function chartSvg(pts,color,unit){
+  if(pts.length<2)return'';
+  const W=300,H=110,P=16,xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const X=x=>P+(x1===x0?0:(x-x0)/(x1-x0))*(W-2*P),Y=y=>H-P-(y1===y0?.5:(y-y0)/(y1-y0))*(H-2*P-8);
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;color:var(--tx)"><polyline fill="none" stroke="'+color+'" stroke-width="2.5" points="'+pts.map(p=>X(p.x)+','+Y(p.y)).join(' ')+'"/>'
+   +pts.map(p=>'<circle cx="'+X(p.x)+'" cy="'+Y(p.y)+'" r="3.5" fill="'+color+'"/>').join('')
+   +'<text x="'+P+'" y="11" font-size="11" fill="currentColor">최근 '+ys[ys.length-1]+unit+'</text></svg>'}
+function renderGrow(){
+  const a=[...grow].sort((p,q)=>p.date.localeCompare(q.date)||p.id-q.id);
+  const tm=r=>new Date(r.date+'T00:00').getTime();
+  const ph=a.filter(r=>r.h).map(r=>({x:tm(r),y:r.h})),pw=a.filter(r=>r.w).map(r=>({x:tm(r),y:r.w}));
+  const c=(ph.length>1?'<b>키 (cm)</b>'+chartSvg(ph,'#5d9cf0','cm'):'')+(pw.length>1?'<div style="margin-top:8px"><b>몸무게 (kg)</b></div>'+chartSvg(pw,'#f08a5d','kg'):'');
+  $('gChart').style.display=c?'block':'none';$('gChart').innerHTML=c;
+  let lw=null,lh=null;const dl={};
+  a.forEach(r=>{dl[r.id]={w:r.w&&lw!=null?r.w-lw:null,h:r.h&&lh!=null?r.h-lh:null};if(r.w)lw=r.w;if(r.h)lh=r.h});
+  const sg=(d,n)=>d==null?'':' <span class="sub">('+(d>=0?'+':'')+d.toFixed(n)+')</span>';
+  const age=ds=>{if(!prof.birth)return'';const d=Math.round((new Date(ds+'T00:00')-new Date(prof.birth+'T00:00'))/864e5);return d>=0?' · 생후 '+d+'일':''};
+  $('gList').innerHTML=[...a].reverse().map(r=>`<div class="item"><span>${r.date.replace(/-/g,'.')}<span class="sub">${age(r.date)}</span><br>${r.h?'키 '+r.h+'cm'+sg(dl[r.id].h,1):''}${r.h&&r.w?' · ':''}${r.w?'몸무게 '+r.w+'kg'+sg(dl[r.id].w,2):''}</span><span><button class="sm" onclick="editGrow(${r.id})">수정</button> <button class="sm" onclick="delGrow(${r.id})">삭제</button></span></div>`).join('')||'<div class="sub">아직 기록이 없어요</div>'}
+// ----- 구글 시트 동기화 -----
+const CK='mandeok_cfg',BK='mandeok_base';
+let cfg={},base={},syncing=false,again=false,syncT=null;
+try{cfg=JSON.parse(localStorage.getItem(CK)||'{}')}catch(e){}
+try{base=JSON.parse(localStorage.getItem(BK)||'{}')}catch(e){}
+const cSave=()=>{try{localStorage.setItem(CK,JSON.stringify(cfg))}catch(e){}};
+const bSave=()=>{try{localStorage.setItem(BK,JSON.stringify(base))}catch(e){}};
+const persistAll=()=>{try{localStorage.setItem(KEY,JSON.stringify(log));localStorage.setItem(GK,JSON.stringify(grow));localStorage.setItem(VK,JSON.stringify(vax));localStorage.setItem('mandeok_vaxdate',JSON.stringify(vdate));localStorage.setItem(PK,JSON.stringify(prof))}catch(e){}};
+const setSt=t=>{const el=$('syncSt');if(el)el.textContent=t};
+const post=o=>fetch(cfg.url,{method:'POST',body:JSON.stringify({key:cfg.key,...o})}).then(r=>r.json());
+function kick(){
+  if(!cfg.url)return;
+  if(syncing){again=true;return}
+  clearTimeout(syncT);syncT=setTimeout(doSync,1500)}
+function saveCfg(){
+  const u=$('cUrl').value.trim(),k=$('cKey').value.trim();
+  if(!u||!k){alert('웹앱 URL이랑 비밀번호를 둘 다 넣어줘');return}
+  if(u!==cfg.url||k!==cfg.key){cfg.last=0;base={};bSave()}
+  cfg.url=u;cfg.key=k;cSave();$('setCard').style.display='none';doSync()}
+function offCfg(){if(!confirm('연동을 끌까요? (폰에 있는 기록은 그대로 남아요)'))return;cfg={};cSave();setSt('');$('setCard').style.display='none';toast('연동 꺼짐')}
+const allDiary=async()=>((await tx('readonly',s=>s.getAll()))||[]).map(e=>{e.pids=e.pids||[];return e});
+async function curRecs(){
+  const R={log:{},grow:{},vax:{},prof:{},diary:{}};
+  log.forEach(e=>R.log[e.id]=JSON.stringify(e));
+  grow.forEach(r=>R.grow[r.id]=JSON.stringify(r));
+  new Set([...Object.keys(vax),...Object.keys(vdate)]).forEach(id=>{const d={done:vax[id]||'',date:vdate[id]||''};if(d.done||d.date)R.vax[id]=JSON.stringify(d)});
+  if(prof.name||prof.birth)R.prof.main=JSON.stringify(prof);
+  (await allDiary()).forEach(e=>R.diary[e.id]=JSON.stringify({id:e.id,date:e.date,text:e.text,pids:e.pids}));
+  return R}
+async function applyDiary(d){
+  const old=(await tx('readonly',s=>s.get(d.id)))||null,photos=[];
+  for(let i=0;i<d.pids.length;i++){
+    const j=old&&old.pids?old.pids.indexOf(d.pids[i]):-1;
+    if(j>=0&&old.photos[j])photos.push(old.photos[j]);
+    else{const r=await post({action:'getphoto',pid:d.pids[i]});if(!r.ok)throw new Error('photo');photos.push('data:image/jpeg;base64,'+r.data)}}
+  await tx('readwrite',s=>s.put({id:d.id,date:d.date,text:d.text,photos,pids:[...d.pids]}))}
+async function applyRecs(recs){
+  for(const r of recs){
+    const k=r.kind,id=r.id;base[k]=base[k]||{};
+    if(r.deleted){
+      if(k==='log')log=log.filter(e=>String(e.id)!==id);
+      else if(k==='grow')grow=grow.filter(e=>String(e.id)!==id);
+      else if(k==='vax'){delete vax[id];delete vdate[id]}
+      else if(k==='diary')await tx('readwrite',s=>s.delete(Number(id)));
+      delete base[k][id];continue}
+    const d=r.data;
+    if(k==='log'){log=log.filter(e=>String(e.id)!==id);log.push(d)}
+    else if(k==='grow'){grow=grow.filter(e=>String(e.id)!==id);grow.push(d)}
+    else if(k==='vax'){if(d.done)vax[id]=d.done;else delete vax[id];if(d.date)vdate[id]=d.date;else delete vdate[id]}
+    else if(k==='prof')prof=d;
+    else if(k==='diary')await applyDiary(d);
+    base[k][id]=JSON.stringify(d)}
+  log.sort((a,b)=>a.t-b.t)}
+async function doSync(){
+  if(!cfg.url||syncing)return;
+  syncing=true;setSt('⏳ 동기화 중...');
+  try{
+    // 1) 새 사진 업로드
+    for(const e of await allDiary()){let ch=false;
+      for(let i=0;i<e.photos.length;i++)if(!e.pids[i]){
+        const r=await post({action:'photo',data:e.photos[i].split(',')[1]});
+        if(!r.ok)throw new Error(r.err||'photo');e.pids[i]=r.pid;ch=true}
+      if(ch)await tx('readwrite',s=>s.put(e))}
+    // 2) 바뀐 것 찾기
+    const R=await curRecs(),ch=[],now=Date.now();
+    for(const k in R){const b=base[k]||{};
+      for(const id in R[k])if(b[id]!==R[k][id])ch.push({kind:k,id,data:JSON.parse(R[k][id]),updated:now});
+      for(const id in b)if(!(id in R[k]))ch.push({kind:k,id,deleted:true,updated:now})}
+    // 3) 보내고 받기
+    let recs=[],srv=cfg.last||0;
+    for(let i=0;i<Math.max(1,ch.length);i+=150){
+      const r=await post({action:'sync',since:cfg.last||0,changes:ch.slice(i,i+150)});
+      if(!r.ok)throw new Error(r.err||'sync');
+      recs=recs.concat(r.recs);srv=Math.max(srv,r.srv)}
+    await applyRecs(recs);
+    cfg.last=srv;cSave();bSave();persistAll();
+    render();renderDiary();
+    setSt('☁️ 동기화됨 '+hm(Date.now()))
+  }catch(e){
+    setSt(String(e.message)==='key'?'⚠️ 비밀번호가 달라요':'⚠️ 동기화 실패 (눌러서 다시)')
+  }finally{
+    syncing=false;if(again){again=false;kick()}}}
+function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
+function add(type,v,t){log.push({id:Date.now(),t:t||Date.now(),type,v});log.sort((a,b)=>a.t-b.t);save();render();if(navigator.vibrate)navigator.vibrate(30)}
+function milk(ml){add('milk',ml);toast('🍼 분유 '+ml+'ml 기록')}
+function milkCustom(){const v=parseInt(prompt('분유량 (ml)'),10);if(v>0)milk(v)}
+const ST=[['황금똥','🟡'],['일반','🟤'],['토끼똥','🐰'],['설사','💧']];
+let stoolCb=null;
+function stoolSheet(cb){stoolCb=cb;$('stoolBtns').innerHTML=ST.map(([n,e])=>`<button class="b3" style="flex:1 1 40%" onclick="pickStool('${n}')">${e} ${n}</button>`).join('');$('sheet').style.display='flex'}
+function closeSheet(){$('sheet').style.display='none';stoolCb=null}
+function pickStool(n){const cb=stoolCb;closeSheet();if(cb)cb(n)}
+function stoolTxt(items){const c={};items.forEach(e=>{if(e.type==='diaper'){const m=e.v.match(/\((.+)\)/);if(m)c[m[1]]=(c[m[1]]||0)+1}});return ST.filter(([n])=>c[n]).map(([n,em])=>em+n+' '+c[n]).join(' · ')}
+function mSync(){const ty=$('mType').value;$('mMl').style.display=ty==='milk'?'':'none';$('mStool').style.display=ty.includes('대변')?'':'none'}
+function diaper(k){
+  if(k.includes('대변'))stoolSheet(n=>{const v=n?k+'('+n+')':k;add('diaper',v);toast('🧷 '+v+' 기록')});
+  else{add('diaper',k);toast('🧷 '+k+' 기록')}
+}
+function sleeping(){const s=log.filter(e=>e.type==='sleep');return s.length&&s[s.length-1].v==='start'?s[s.length-1]:null}
+function sleep(){const on=sleeping();add('sleep',on?'end':'start');toast(on?'☀️ 기상 기록':'🌙 수면 시작')}
+function undo(){if(!log.length)return;const e=log.reduce((a,b)=>b.id>a.id?b:a);if(!confirm('방금 기록을 취소할까요?\n'+hm(e.t)+' '+label(e)))return;log=log.filter(x=>x!==e);save();render();toast('취소됨: '+label(e))}
+function edit(id){
+  const e=log.find(x=>x.id===id);if(!e)return;
+  const fin=()=>{
+    const tv=prompt('시간 (HH:MM)',hm(e.t));
+    if(tv){const m=tv.match(/^(\d{1,2}):(\d{2})$/);
+      if(m){const d=new Date(e.t);d.setHours(+m[1],+m[2],0,0);e.t=d.getTime()}
+      else alert('시간 형식이 달라서 시간은 그대로 뒀어 (예: 14:30)')}
+    log.sort((a,b)=>a.t-b.t);save();render();toast('수정됨')};
+  if(e.type==='milk'){const v=parseInt(prompt('실제로 먹은 양 (ml)',e.v),10);if(!(v>0))return;e.v=v;fin()}
+  else if(e.type==='diaper'&&e.v.includes('대변')){const base=e.v.replace(/\(.*\)/,'');stoolSheet(n=>{e.v=n?base+'('+n+')':base;fin()})}
+  else fin();
+}
+function del(id){const e=log.find(x=>x.id===id);if(!e||!confirm('정말 삭제할까요?\n'+hm(e.t)+' '+label(e)))return;log=log.filter(x=>x.id!==id);save();render()}
+function label(e){return e.type==='milk'?'🍼 분유 '+e.v+'ml':e.type==='diaper'?'🧷 '+e.v:(e.v==='start'?'🌙 수면 시작':'☀️ 기상')}
+
+function sleepOn(d0){
+  const d1=d0+864e5;let tot=0,st=null;
+  const ov=(a,b)=>Math.max(0,Math.min(b,d1)-Math.max(a,d0));
+  for(const e of log.filter(e=>e.type==='sleep')){
+    if(e.v==='start')st=e.t;else if(st){tot+=ov(st,e.t);st=null}
+  }
+  if(st)tot+=ov(st,Date.now());
+  return tot;
+}
+const sleepToday=()=>sleepOn(new Date().setHours(0,0,0,0));
+const ymd=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const nowLocal=()=>ymd(Date.now())+'T'+hm(Date.now());
+
+function manual(){
+  const ty=$('mType').value,tv=$('mTime').value;
+  if(!tv){alert('시간을 선택해줘');return}
+  const t=new Date(tv).getTime();
+  if(ty==='milk'){const ml=parseInt($('mMl').value,10);if(!(ml>0)){alert('분유량(ml)을 입력해줘');return}add('milk',ml,t);$('mMl').value=''}
+  else if(ty==='sleep-start')add('sleep','start',t);
+  else if(ty==='sleep-end')add('sleep','end',t);
+  else add('diaper',ty.includes('대변')&&$('mStool').value?ty+'('+$('mStool').value+')':ty,t);
+  $('mTime').value=nowLocal();toast('✏️ '+hm(t)+' 기록 추가됨');
+}
+function shiftD(n){const d=new Date($('hDate').value+'T00:00');d.setDate(d.getDate()+n);$('hDate').value=ymd(d);renderHist()}
+function renderHist(){
+  if(!$('hDate').value)$('hDate').value=ymd(Date.now());
+  const d0=new Date($('hDate').value+'T00:00').getTime();
+  const it=log.filter(e=>e.t>=d0&&e.t<d0+864e5);
+  const ms=it.filter(e=>e.type==='milk');
+  $('hMilk').textContent=ms.reduce((a,e)=>a+e.v,0);
+  $('hMilkN').textContent=ms.length;
+  $('hDia').textContent=it.filter(e=>e.type==='diaper').length;$('hStool').textContent=stoolTxt(it);
+  $('hSleep').textContent=dur(sleepOn(d0));
+  $('hList').innerHTML=it.map(e=>`<div class="item"><span>${hm(e.t)} &nbsp;${label(e)}</span><span><button onclick="edit(${e.id})">수정</button> <button onclick="del(${e.id})">삭제</button></span></div>`).join('')||'<div class="sub">이 날은 기록이 없어요</div>';
+}
+
+function tick(){
+  const m=log.filter(e=>e.type==='milk');
+  if(m.length){const l=m[m.length-1];$('since').textContent=dur(Date.now()-l.t);$('lastinfo').textContent=hm(l.t)+' · '+l.v+'ml'}
+  else{$('since').textContent='--';$('lastinfo').textContent='아직 기록 없음'}
+  const s=sleeping();
+  $('sleepinfo').textContent=s?hm(s.t)+'부터 자는 중 ('+dur(Date.now()-s.t)+')':'';
+  $('sSleep').textContent=dur(sleepToday());
+}
+function render(){
+  const today=log.filter(e=>sameDay(e.t));
+  const ms=today.filter(e=>e.type==='milk');
+  $('sMilk').textContent=ms.reduce((a,e)=>a+e.v,0);
+  $('sMilkN').textContent=ms.length;
+  $('sDia').textContent=today.filter(e=>e.type==='diaper').length;$('sStool').textContent=stoolTxt(today);
+  const b=$('sleepBtn'),on=!!sleeping();
+  b.textContent=on?'기상 (수면 끝)':'수면 시작';b.classList.toggle('on',on);
+  $('list').innerHTML=log.slice(-12).reverse().map(e=>
+    `<div class="item"><span>${hm(e.t)} &nbsp;${label(e)}</span><span><button onclick="edit(${e.id})">수정</button> <button onclick="del(${e.id})">삭제</button></span></div>`
+  ).join('')||'<div class="sub">기록이 없어요</div>';
+  tick();renderHist();renderProfile();renderVax();renderTips();renderGrow();
+}
+
+// 홈 화면 아이콘 (캔버스로 생성)
+(function(){
+  const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');
+  x.fillStyle='#f08a5d';x.fillRect(0,0,180,180);
+  x.font='110px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('👶',90,98);
+  $('icon').href=c.toDataURL('image/png');
+})();
+
+$('mTime').value=nowLocal();$('dDate').value=ymd(Date.now());
+render();let t0='rec';try{t0=localStorage.getItem('mandeok_tab')||'rec'}catch(e){}tab(t0);renderDiary();resetGrow();mSync();
+if(cfg.url){setSt('☁️ 연동됨');setTimeout(doSync,600);setInterval(()=>{if(!document.hidden)doSync()},90000)}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}setInterval(tick,30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();doSync()}});
+</script>
+</body>
+</html>
